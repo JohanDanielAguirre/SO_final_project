@@ -1,93 +1,96 @@
 #!/bin/bash
 
-function show_menu {
-    clear
-    echo "Herramienta de Administración de Data Center"
-    echo "------------------------------------------"
-    echo "1. Procesos"
-    echo "2. Usuarios"
-    echo "3. Backup"
-    echo "4. Apagar equipo"
-    echo "0. Salir"
-}
-
-function manage_processes {
-    echo "Gestión de Procesos"
+mostrar_menu() {
+    echo "================================="
+    echo "      Herramienta de Administración"
+    echo "        para Data Centers"
+    echo "================================="
+    echo "Seleccione una opción:"
+    echo "---------------------------------"
     echo "1. Listar procesos"
-    echo "2. 5 procesos que más consumen CPU"
-    echo "3. 5 procesos que más consumen memoria"
+    echo "2. Mostrar 5 procesos que más consumen CPU"
+    echo "3. Mostrar 5 procesos que más consumen memoria"
     echo "4. Terminar un proceso"
-    read -p "Seleccione una opción: " choice
-
-    case $choice in
-        1) ps aux --sort=-%mem | less ;;
-        2) ps aux --sort=-%cpu | head -n 6 ;;
-        3) ps aux --sort=-%mem | head -n 6 ;;
-        4) 
-            read -p "Ingrese el nombre o PID del proceso a terminar: " process_name
-            kill -9 $(pgrep -f "$process_name") && echo "Proceso $process_name terminado." || echo "Proceso no encontrado."
-            ;;
-        *) echo "Opción no válida." ;;
-    esac
+    echo "5. Listar usuarios del sistema"
+    echo "6. Listar usuarios por vejez de contraseña"
+    echo "7. Cambiar contraseña de un usuario"
+    echo "8. Realizar backup del directorio de usuarios"
+    echo "9. Apagar el equipo"
+    echo "0. Salir"
+    echo "---------------------------------"
 }
 
-function manage_users {
-    echo "Gestión de Usuarios"
-    echo "1. Listar usuarios"
-    echo "2. Listado de usuarios por antigüedad de contraseña"
-    echo "3. Cambiar contraseña de un usuario"
-    read -p "Seleccione una opción: " choice
-
-    case $choice in
-        1) cat /etc/passwd | cut -d: -f1 | less ;;
-        2) 
-            echo "Usuarios y antigüedad de contraseña:"
-            chage -l $(whoami) | grep "Last password change" | sort
-            ;;
-        3) 
-            read -p "Ingrese el nombre del usuario: " username
-            sudo passwd $username
-            ;;
-        *) echo "Opción no válida." ;;
-    esac
+# Función para listar procesos
+listar_procesos() {
+    ps aux | awk '{printf "%-10s %-10s %-10s %-10s %-10s %-10s %-10s\n", $1, $2, $3, $4, $5, $6, $11}'
 }
 
-function perform_backup {
-    read -p "Ingrese el directorio de destino para el backup: " backup_dir
-    timestamp=$(date +%Y%m%d_%H%M%S)
-    backup_file="$backup_dir/backup_$timestamp.tar.gz"
-
-    user_dir="/home"
-    if [ -d "$user_dir" ]; then
-        tar -czvf "$backup_file" "$user_dir"
-        echo "Backup realizado en $backup_file"
-    else
-        echo "El directorio de usuarios no existe."
-    fi
+# Función para mostrar los 5 procesos que más consumen CPU
+procesos_top_cpu() {
+    ps aux --sort=-%cpu | head -n 6 | awk '{printf "%-10s %-10s %-10s %-10s %-10s %-10s %-10s\n", $1, $2, $3, $4, $5, $6, $11}'
 }
 
-function shutdown_system {
-    echo "Apagando el equipo..."
-    sudo shutdown now
+# Función para mostrar los 5 procesos que más consumen memoria
+procesos_top_memoria() {
+    echo "================================="
+    ps aux --sort=-%mem | head -n 6 | awk '{printf "%-10s %-10s %-10s %-10s %-10s %-10s %-10s\n", $1, $2, $3, $4, $5, $6, $11}'
 }
 
+# Función para terminar un proceso
+terminar_proceso() {
+    read -p "Ingrese el PID del proceso a terminar: " pid
+    kill $pid
+}
+
+# Función para listar usuarios del sistema
+listar_usuarios() {
+    cut -d: -f1 /etc/passwd
+}
+
+# Función para listar usuarios por vejez de contraseña
+listar_usuarios_vejez() {
+    # No esta realizando correctamente el ordenamiento por fecha
+    printf "%-20s %-20s\n" "Usuario" "Último cambio de contraseña"
+    printf "%-20s %-20s\n" "-------" "--------------------------"
+    for user in $(cut -d: -f1 /etc/passwd); do
+        password_date=$(chage -l $user | grep "Last password change" | cut -d: -f2)
+        printf "%-20s %-20s\n" "$user" "$password_date"
+    done | sort -k1,1 -k2,2
+    
+}
+
+# Función para cambiar la contraseña de un usuario
+cambiar_contrasena() {
+    read -p "Ingrese el nombre de usuario: " usuario
+    passwd $usuario
+}
+
+# Función para realizar backup del directorio de usuarios
+realizar_backup() {
+    read -p "Ingrese el directorio de destino para el backup: " destino
+    tar -czvf $destino/backup_$(date +%Y%m%d).tar.gz /home
+}
+
+# Función para apagar el equipo
+apagar_equipo() {
+    shutdown now
+}
+
+# Bucle principal
 while true; do
-    show_menu
-    read -p "Seleccione una opción: " option
-
-    case $option in
-        1) manage_processes ;;
-        2) manage_users ;;
-        3) perform_backup ;;
-        4) shutdown_system ;;
-        0) 
-            echo "Saliendo..."
-            break
-            ;;
-        *) echo "Opción no válida." ;;
+    mostrar_menu
+    read -p "Opción: " opcion
+    case $opcion in
+        1) listar_procesos ;;
+        2) procesos_top_cpu ;;
+        3) procesos_top_memoria ;;
+        4) terminar_proceso ;;
+        5) listar_usuarios ;;
+        6) listar_usuarios_vejez ;;
+        7) cambiar_contrasena ;;
+        8) realizar_backup ;;
+        9) apagar_equipo ;;
+        0) exit 0 ;;
+        *) echo "Opción no válida" ;;
     esac
-
-    if [ "$option" -ne 0 ]; then
-        read -p "Presione Enter para continuar..."
-    fi
 done
