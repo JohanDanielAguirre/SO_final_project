@@ -2,7 +2,7 @@
 
 function Show-Menu {
     Clear-Host
-    Write-Host "Herramienta de Administración de Data Center"
+    Write-Host "Herramienta de Administracion de Data Center"
     Write-Host "------------------------------------------"
     Write-Host "1. Procesos"
     Write-Host "2. Usuarios"
@@ -12,12 +12,12 @@ function Show-Menu {
 }
 
 function Manage-Processes {
-    Write-Host "Gestión de Procesos"
+    Write-Host "Gestion de Procesos"
     Write-Host "1. Listar procesos"
-    Write-Host "2. 5 procesos que más consumen CPU"
-    Write-Host "3. 5 procesos que más consumen memoria"
+    Write-Host "2. 5 procesos que mas consumen CPU"
+    Write-Host "3. 5 procesos que mas consumen memoria"
     Write-Host "4. Terminar un proceso"
-    $choice = Read-Host "Seleccione una opción"
+    $choice = Read-Host "Seleccione una opcion"
 
     switch ($choice) {
         1 { Get-Process | Format-Table -AutoSize }
@@ -28,16 +28,16 @@ function Manage-Processes {
             Stop-Process -Name $processName -Force
             Write-Host "Proceso $processName terminado."
         }
-        default { Write-Host "Opción no válida." }
+        default { Write-Host "Opcion no valida." }
     }
 }
 
 function Manage-Users {
-    Write-Host "Gestión de Usuarios"
+    Write-Host "Gestion de Usuarios"
     Write-Host "1. Listar usuarios"
-    Write-Host "2. Listado de usuarios por antigüedad de contraseña"
-    Write-Host "3. Cambiar contraseña de un usuario"
-    $choice = Read-Host "Seleccione una opción"
+    Write-Host "2. Listado de usuarios por antigüedad de contrasena"
+    Write-Host "3. Cambiar contrasena de un usuario"
+    $choice = Read-Host "Seleccione una opcion"
 
     switch ($choice) {
         1 { Get-LocalUser | Format-Table -AutoSize }
@@ -49,24 +49,32 @@ function Manage-Users {
             $username = Read-Host "Ingrese el nombre del usuario"
             $newPassword = Read-Host "Ingrese la nueva contraseña" -AsSecureString
             Set-LocalUser -Name $username -Password $newPassword
-            Write-Host "Contraseña de $username cambiada."
+            Write-Host "Contrasena de $username cambiada."
         }
-        default { Write-Host "Opción no válida." }
+        default { Write-Host "Opcion no valida." }
     }
 }
 
 function Perform-Backup {
+    $sourceDir = Read-Host "Ingrese el directorio que desea respaldar"
+    
+    if (!(Test-Path $sourceDir)) {
+        Write-Host "El directorio de origen '$sourceDir' no existe. Por favor, intente de nuevo."
+        return
+    }
+    
     $backupDir = Read-Host "Ingrese el directorio de destino para el backup"
+    if (!(Test-Path $backupDir)) {
+        New-Item -ItemType Directory -Path $backupDir | Out-Null
+    }
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $backupFile = "$backupDir\backup_$timestamp.zip"
+    $backupFile = Join-Path -Path $backupDir -ChildPath "backup_$timestamp.zip"
 
-    # Crear backup del directorio de usuarios
-    $userDir = "C:\Users"
-    if (Test-Path $userDir) {
-        Compress-Archive -Path $userDir -DestinationPath $backupFile
-        Write-Host "Backup realizado en $backupFile"
-    } else {
-        Write-Host "El directorio de usuarios no existe."
+    try {
+        Compress-Archive -Path $sourceDir -DestinationPath $backupFile
+        Write-Host "Backup realizado exitosamente en: $backupFile"
+    } catch {
+        Write-Host "Ocurri� un error al realizar el backup: $_"
     }
 }
 
@@ -77,7 +85,7 @@ function Shutdown-System {
 
 do {
     Show-Menu
-    $option = Read-Host "Seleccione una opción"
+    $option = Read-Host "Seleccione una opcion"
     
     switch ($option) {
         1 { Manage-Processes }
@@ -85,7 +93,7 @@ do {
         3 { Perform-Backup }
         4 { Shutdown-System }
         0 { Write-Host "Saliendo..." }
-        default { Write-Host "Opción no válida." }
+        default { Write-Host "OpcioC:\Users\aguir\Downloads\lacacan no valida." }
     }
 
     if ($option -ne 0) {
