@@ -54,9 +54,10 @@ listar_usuarios_vejez() {
     printf "%-20s %-20s\n" "-------" "--------------------------"
     for user in $(cut -d: -f1 /etc/passwd); do
         password_date=$(chage -l $user | grep "Last password change" | cut -d: -f2)
-        printf "%-20s %-20s\n" "$user" "$password_date"
-    done | sort -k1,1 -k2,2
-    
+        date_password_month=$(echo $password_date | awk '{print $1}')
+        date_password_year=$(echo $password_date | awk '{print $3}')
+        printf "%-20s %-20s %-20s\n" "$user" "$date_password_month" "$date_password_year"
+    done | sort -k3,3 -k2,2M
 }
 
 # Función para cambiar la contraseña de un usuario
@@ -67,8 +68,30 @@ cambiar_contrasena() {
 
 # Función para realizar backup del directorio de usuarios
 realizar_backup() {
+
     read -p "Ingrese el directorio de destino para el backup: " destino
-    tar -czvf $destino/backup_$(date +%Y%m%d).tar.gz /home
+
+    # Verificar si el directorio de destino existe; si no, crear uno
+    if [[ ! -d "$destino" ]]; then
+        echo "El directorio no existe. Creándolo..."
+        mkdir -p "$destino"
+        if [[ $? -ne 0 ]]; then
+            echo "No se pudo crear el directorio de destino. Abortando."
+            return 1
+        fi
+    fi
+
+    # Generar el archivo de backup
+    local archivo="$destino/backup_$(date +%Y%m%d).tar.gz"
+    tar -czvf "$archivo" /home
+
+    # Verificar si el comando fue exitoso
+    if [[ $? -eq 0 ]]; then
+        echo "Backup creado con éxito: $archivo"
+    else
+        echo "Hubo un error al crear el backup."
+        return 1
+    fi
 }
 
 # Función para apagar el equipo
